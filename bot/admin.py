@@ -129,7 +129,7 @@ async def add_new_admin(message: Message):
         await message.answer("Используй: /addadmin ID")
         return
 
-    add_admin(user_id)
+    make_admin(user_id)
 
     await message.answer(
         f"✅ Админ {user_id} добавлен"
