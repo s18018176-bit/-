@@ -31,7 +31,7 @@ def init_db():
         status TEXT
     )
     """)
-        cur.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS news(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         text TEXT
