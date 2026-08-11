@@ -1,6 +1,5 @@
 import sqlite3
 
-
 DB = "database.db"
 
 
@@ -8,7 +7,6 @@ def connect():
     return sqlite3.connect(DB)
 
 
-# Создание таблиц
 def init_db():
     db = connect()
     cur = db.cursor()
@@ -16,13 +14,8 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
-        balance INTEGER DEFAULT 0
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS admins(
-        id INTEGER PRIMARY KEY
+        balance INTEGER DEFAULT 0,
+        is_admin INTEGER DEFAULT 0
     )
     """)
 
@@ -60,27 +53,9 @@ def init_db():
     db.close()
 
 
-
-# ---------- ПОЛЬЗОВАТЕЛИ ----------
-
-def get_user(user_id):
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "SELECT * FROM users WHERE id=?",
-        (user_id,)
-    )
-
-    result = cur.fetchone()
-
-    db.close()
-    return result
-
-
+# USERS
 
 def add_user(user_id):
-
     db = connect()
     cur = db.cursor()
 
@@ -93,16 +68,29 @@ def add_user(user_id):
     db.close()
 
 
-
-# ---------- АДМИНЫ ----------
-
-def add_admin(user_id):
-
+def get_user(user_id):
     db = connect()
     cur = db.cursor()
 
     cur.execute(
-        "INSERT OR IGNORE INTO admins(id) VALUES(?)",
+        "SELECT * FROM users WHERE id=?",
+        (user_id,)
+    )
+
+    user = cur.fetchone()
+
+    db.close()
+    return user
+
+
+# ADMINS
+
+def add_admin(user_id):
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "UPDATE users SET is_admin=1 WHERE id=?",
         (user_id,)
     )
 
@@ -110,45 +98,9 @@ def add_admin(user_id):
     db.close()
 
 
-
-# ---------- ВЫПЛАТЫ ----------
-
-def get_withdrawals():
-
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "SELECT * FROM withdrawals"
-    )
-
-    data = cur.fetchall()
-
-    db.close()
-
-    return data
-
-
-
-def update_withdraw(id, status):
-
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "UPDATE withdrawals SET status=? WHERE id=?",
-        (status,id)
-    )
-
-    db.commit()
-    db.close()
-
-
-
-# ---------- НОВОСТИ ----------
+# NEWS
 
 def add_news(text):
-
     db = connect()
     cur = db.cursor()
 
@@ -161,9 +113,7 @@ def add_news(text):
     db.close()
 
 
-
 def get_news():
-
     db = connect()
     cur = db.cursor()
 
@@ -178,11 +128,9 @@ def get_news():
     return [x[0] for x in data]
 
 
-
-# ---------- БОТЫ ----------
+# BOTS
 
 def add_bot(text):
-
     db = connect()
     cur = db.cursor()
 
@@ -195,9 +143,7 @@ def add_bot(text):
     db.close()
 
 
-
 def get_bots():
-
     db = connect()
     cur = db.cursor()
 
@@ -212,17 +158,13 @@ def get_bots():
     return [x[0] for x in data]
 
 
-
-# ---------- ТОП ----------
+# TOP
 
 def set_top(text):
-
     db = connect()
     cur = db.cursor()
 
-    cur.execute(
-        "DELETE FROM top"
-    )
+    cur.execute("DELETE FROM top")
 
     cur.execute(
         "INSERT INTO top(id,text) VALUES(1,?)",
@@ -233,9 +175,7 @@ def set_top(text):
     db.close()
 
 
-
 def get_top():
-
     db = connect()
     cur = db.cursor()
 
@@ -247,12 +187,35 @@ def get_top():
 
     db.close()
 
-    if data:
-        return data[0]
-
-    return "Топ пока пуст"
+    return data[0] if data else "Топ пока пуст"
 
 
+# WITHDRAW
 
-# Запуск создания базы
+def get_withdrawals():
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute("SELECT * FROM withdrawals")
+
+    data = cur.fetchall()
+
+    db.close()
+
+    return data
+
+
+def update_withdraw(id, status):
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "UPDATE withdrawals SET status=? WHERE id=?",
+        (status, id)
+    )
+
+    db.commit()
+    db.close()
+
+
 init_db()
