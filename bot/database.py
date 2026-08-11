@@ -3,6 +3,8 @@ import sqlite3
 DB = "database.db"
 
 
+
+
 def connect():
     return sqlite3.connect(DB)
 
