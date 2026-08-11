@@ -211,7 +211,7 @@ def get_news():
 
     db.close()
 
-    return dataй
+    return data
 
 def add_bot(text):
 
