@@ -172,3 +172,35 @@ def update_withdraw(id, status):
 
     db.commit()
     db.close()
+
+def add_news(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO news(text)
+        VALUES(?)
+        """,
+        (text,)
+    )
+
+    db.commit()
+    db.close()
+
+
+def get_news():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "SELECT * FROM news ORDER BY id DESC"
+    )
+
+    data = cur.fetchall()
+
+    db.close()
+
+    return dataй
