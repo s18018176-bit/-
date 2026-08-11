@@ -295,3 +295,19 @@ async def admin_button(message: Message):
         return
 
     await admin_panel(message)
+
+@router.message(lambda message: message.text == "🤖 Актуальные боты")
+async def bots_button(message: Message):
+
+    data = get_bots()
+
+    if not data:
+        await message.answer("🤖 Актуальных ботов пока нет")
+        return
+
+    text = "🤖 Актуальные боты:\n\n"
+
+    for b in data:
+        text += f"• {b}\n"
+
+    await message.answer(text)
