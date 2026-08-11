@@ -37,7 +37,7 @@ async def admin_panel(message: Message):
 
 
 # Просмотр заявок
-@router.message(Command(withdrawals"))
+@router.message(Command("withdrawals"))
 async def withdraws(message: Message):
     if not is_admin(message.from_user.id):
         return
