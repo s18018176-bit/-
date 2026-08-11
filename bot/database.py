@@ -6,63 +6,145 @@ cursor = db.cursor()
 
 
 def init_db():
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
+        balance INTEGER DEFAULT 0,
         wallet_type TEXT,
         wallet TEXT,
-        balance INTEGER DEFAULT 0,
         is_admin INTEGER DEFAULT 0
     )
     """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS withdrawals(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        amount INTEGER,
+        status TEXT DEFAULT 'pending'
+    )
+    """)
+
     db.commit()
 
 
-def add_user(user_id):
+
+def add_user(uid):
+
     cursor.execute(
         "INSERT OR IGNORE INTO users(id) VALUES(?)",
-        (user_id,)
+        (uid,)
     )
+
     db.commit()
 
 
-def get_user(user_id):
+
+def get_user(uid):
+
     cursor.execute(
         "SELECT * FROM users WHERE id=?",
-        (user_id,)
+        (uid,)
     )
+
     return cursor.fetchone()
 
 
-def set_wallet(user_id, wtype, wallet):
+
+def add_balance(uid, amount):
+
+    cursor.execute(
+        """
+        UPDATE users
+        SET balance = balance + ?
+        WHERE id=?
+        """,
+        (amount, uid)
+    )
+
+    db.commit()
+
+
+
+def set_wallet(uid, wtype, wallet):
+
     cursor.execute(
         """
         UPDATE users
         SET wallet_type=?, wallet=?
         WHERE id=?
         """,
-        (wtype, wallet, user_id)
+        (wtype, wallet, uid)
     )
+
     db.commit()
 
 
-def make_admin(user_id):
+
+def make_admin(uid):
+
+    add_user(uid)
+
     cursor.execute(
-        "UPDATE users SET is_admin=1 WHERE id=?",
-        (user_id,)
+        """
+        UPDATE users
+        SET is_admin=1
+        WHERE id=?
+        """,
+        (uid,)
     )
+
     db.commit()
 
 
-def admins():
+
+def create_withdraw(uid, amount):
+
     cursor.execute(
-        "SELECT id FROM users WHERE is_admin=1"
+        """
+        INSERT INTO withdrawals(user_id,amount)
+        VALUES(?,?)
+        """,
+        (uid, amount)
     )
+
+    db.commit()
+
+
+
+def get_withdrawals():
+
+    cursor.execute(
+        """
+        SELECT * FROM withdrawals
+        WHERE status='pending'
+        """
+    )
+
     return cursor.fetchall()
 
 
-def all_users():
+
+def update_withdraw(wid,status):
+
+    cursor.execute(
+        """
+        UPDATE withdrawals
+        SET status=?
+        WHERE id=?
+        """,
+        (status,wid)
+    )
+
+    db.commit()
+
+
+
+def users():
+
     cursor.execute(
         "SELECT * FROM users"
     )
+
     return cursor.fetchall()
