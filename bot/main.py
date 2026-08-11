@@ -10,7 +10,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-@dp.message(commands=["start"])
+@dp.message(Command("start"))
 async def start(message: Message):
     await message.answer(
         "👋 Добро пожаловать в Worker Panel\n\n"
@@ -20,7 +20,7 @@ async def start(message: Message):
     )
 
 
-@dp.message(commands=["profile"])
+@dp.message(Command("profile"))
 async def profile(message: Message):
     await message.answer(
         f"👤 Ваш ID: {message.from_user.id}\n"
@@ -28,7 +28,7 @@ async def profile(message: Message):
     )
 
 
-@dp.message(commands=["admin"])
+@dp.message(Command("admin"))
 async def admin(message: Message):
     if message.from_user.id == ADMIN_ID:
         await message.answer(
