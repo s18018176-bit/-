@@ -5,12 +5,16 @@ from aiogram.filters import Command
 from database import (
     get_withdrawals,
     update_withdraw,
-    make_admin,
-    get_user
+    add_admin,
+    add_news,
+    get_news,
+    add_bot,
+    get_bots,
+    set_top,
+    get_top
 )
 
 router = Router()
-
 
 # ID главного админа
 MAIN_ADMIN = 8965415545
@@ -27,16 +31,40 @@ async def admin_panel(message: Message):
         return
 
     await message.answer(
-        "🔐 Админ панель\n\n"
-        "Команды:\n"
+        "⚙️ Админ панель\n\n"
         "/withdraws — заявки на выплаты\n"
-        "/users — пользователи\n"
-        "/addadmin ID — добавить админа"
+        "/addadmin ID — добавить админа\n\n"
+        "📰 Новости:\n"
+        "/addnews текст\n"
+        "/news\n\n"
+        "🤖 Боты:\n"
+        "/addbot название описание\n"
+        "/bots\n\n"
+        "🏆 Топ:\n"
+        "/settop текст\n"
+        "/top"
     )
 
 
-# Просмотр заявок
-@router.message(Command("withdrawals"))
+# Добавить админа
+@router.message(Command("addadmin"))
+async def add_admin_cmd(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    args = message.text.split()
+
+    if len(args) < 2:
+        await message.answer("Пример:\n/addadmin 123456789")
+        return
+
+    add_admin(int(args[1]))
+
+    await message.answer("✅ Админ добавлен")
+
+
+# Просмотр выплат
+@router.message(Command("withdraws"))
 async def withdraws(message: Message):
     if not is_admin(message.from_user.id):
         return
@@ -51,7 +79,7 @@ async def withdraws(message: Message):
 
     for w in data:
         text += (
-            f"ID заявки: {w[0]}\n"
+            f"ID: {w[0]}\n"
             f"Пользователь: {w[1]}\n"
             f"Сумма: {w[2]}\n"
             f"Статус: {w[3]}\n\n"
@@ -69,68 +97,126 @@ async def withdraws(message: Message):
 
 # Одобрить выплату
 @router.message(Command("ok"))
-async def ok_withdraw(message: Message):
+async def approve(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    try:
-        withdraw_id = int(message.text.split()[1])
-    except:
-        await message.answer("Используй: /ok ID")
-        return
+    id = message.text.split()[1]
 
-    approve_withdraw(withdraw_id)
+    update_withdraw(id, "approved")
 
     await message.answer("✅ Выплата одобрена")
 
 
-# Отказать
+# Отклонить выплату
 @router.message(Command("no"))
-async def no_withdraw(message: Message):
+async def reject(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    try:
-        withdraw_id = int(message.text.split()[1])
-    except:
-        await message.answer("Используй: /no ID")
-        return
+    id = message.text.split()[1]
 
-    reject_withdraw(withdraw_id)
+    update_withdraw(id, "rejected")
 
     await message.answer("❌ Выплата отклонена")
 
 
-# Пользователи
-@router.message(Command("users"))
-async def users(message: Message):
+# Новости
+@router.message(Command("addnews"))
+async def add_news_cmd(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    users = get_user()
+    text = message.text.replace("/addnews", "").strip()
 
-    text = "👥 Пользователи:\n\n"
+    if not text:
+        await message.answer(
+            "Пример:\n/addnews Обновление бота сегодня"
+        )
+        return
 
-    for u in users:
-        text += f"ID: {u[0]} Баланс: {u[1]}\n"
+    add_news(text)
+
+    await message.answer("📰 Новость добавлена")
+
+
+@router.message(Command("news"))
+async def news(message: Message):
+
+    data = get_news()
+
+    if not data:
+        await message.answer("Новостей нет")
+        return
+
+    text = "📰 Новости:\n\n"
+
+    for n in data:
+        text += f"• {n}\n"
 
     await message.answer(text)
 
 
-# Добавление админа
-@router.message(Command("addadmin"))
-async def add_new_admin(message: Message):
-    if message.from_user.id != MAIN_ADMIN:
+# Боты
+@router.message(Command("addbot"))
+async def add_bot_cmd(message: Message):
+    if not is_admin(message.from_user.id):
         return
 
-    try:
-        user_id = int(message.text.split()[1])
-    except:
-        await message.answer("Используй: /addadmin ID")
+    text = message.text.replace("/addbot", "").strip()
+
+    if not text:
+        await message.answer(
+            "Пример:\n/addbot @botname описание"
+        )
         return
 
-    make_admin(user_id)
+    add_bot(text)
+
+    await message.answer("🤖 Бот добавлен")
+
+
+@router.message(Command("bots"))
+async def bots(message: Message):
+
+    data = get_bots()
+
+    if not data:
+        await message.answer("Ботов нет")
+        return
+
+    text = "🤖 Актуальные боты:\n\n"
+
+    for b in data:
+        text += f"• {b}\n"
+
+    await message.answer(text)
+
+
+# Топ
+@router.message(Command("settop"))
+async def set_top_cmd(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    text = message.text.replace("/settop", "").strip()
+
+    if not text:
+        await message.answer(
+            "Пример:\n/settop 🥇 BotName - 1000 пользователей"
+        )
+        return
+
+    set_top(text)
+
+    await message.answer("🏆 Топ обновлён")
+
+
+@router.message(Command("top"))
+async def top(message: Message):
+
+    data = get_top()
 
     await message.answer(
-        f"✅ Админ {user_id} добавлен"
+        "🏆 Топ:\n\n" + str(data)
     )
