@@ -3,7 +3,7 @@ from aiogram.types import Message
 from aiogram.filters import Command
 
 from database import (
-    get_withdraws,
+    get_withdrawals,
     approve_withdraw,
     reject_withdraw,
     add_admin,
@@ -37,12 +37,12 @@ async def admin_panel(message: Message):
 
 
 # Просмотр заявок
-@router.message(Command("withdraws"))
+@router.message(Command(withdrawals"))
 async def withdraws(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    data = get_withdraws()
+    data = get_withdrawals()
 
     if not data:
         await message.answer("📭 Заявок нет")
