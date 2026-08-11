@@ -4,8 +4,7 @@ from aiogram.filters import Command
 
 from database import (
     get_withdrawals,
-    approve_withdraw,
-    reject_withdraw,
+    update_withdraw,
     add_admin,
     get_users
 )
