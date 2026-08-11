@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.filters import Command
 
 from database import *
+from admin import router as admin_router
 
 
 TOKEN="8833750528:AAF7W6C6DO0QwvuHqMWKAVtgk8uWJO0TDdk"
@@ -14,7 +15,10 @@ ADMIN_ID=8965415545
 
 
 bot=Bot(TOKEN)
+
 dp=Dispatcher()
+
+dp.include_router(admin_router)
 
 
 state={}
