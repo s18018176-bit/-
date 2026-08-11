@@ -5,26 +5,25 @@ from aiogram.types import Message, KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.filters import Command
 
-
 from database import *
 
 
-TOKEN = "8833750528:AAF7W6C6DO0QwvuHqMWKAVtgk8uWJO0TDdk"
+TOKEN="8833750528:AAF7W6C6DO0QwvuHqMWKAVtgk8uWJO0TDdk"
 
-ADMIN_ID = 8965415545
-
-
-bot = Bot(TOKEN)
-dp = Dispatcher()
+ADMIN_ID=8965415545
 
 
-wallet_wait = {}
-admin_wait = {}
+bot=Bot(TOKEN)
+dp=Dispatcher()
 
 
-def menu(admin=False):
+state={}
 
-    kb = ReplyKeyboardBuilder()
+
+
+def keyboard(admin=False):
+
+    kb=ReplyKeyboardBuilder()
 
     kb.add(
         KeyboardButton(text="🤖 Актуальные боты"),
@@ -45,77 +44,76 @@ def menu(admin=False):
     )
 
 
+
 @dp.message(Command("start"))
-async def start(message: Message):
+async def start(message:Message):
 
-    add_user(message.from_user.id)
+    uid=message.from_user.id
 
-    if message.from_user.id == ADMIN_ID:
-        make_admin(message.from_user.id)
+    add_user(uid)
 
-    user = get_user(message.from_user.id)
+    if uid==ADMIN_ID:
+        make_admin(uid)
+
+    user=get_user(uid)
+
 
     await message.answer(
-        "👋 Добро пожаловать в Worker Panel",
-        reply_markup=menu(
-            user[4] == 1
+        "👋 Добро пожаловать!",
+        reply_markup=keyboard(
+            user[4]==1
         )
     )
 
 
 
-@dp.message(lambda m: m.text=="👤 Профиль")
+@dp.message(lambda m:m.text=="👤 Профиль")
 async def profile(message:Message):
 
-    user=get_user(message.from_user.id)
-
-    wallet = user[2] or "Нет"
-
-    await message.answer(
-        f"""
-👤 Профиль
-
-🆔 ID: {user[0]}
-💰 Баланс: {user[3]}
-
-💳 Реквизиты:
-{wallet}
-
-Нажмите:
-➕ Добавить кошелек
-        """,
-        reply_markup=wallet_menu()
+    user=get_user(
+        message.from_user.id
     )
 
 
-def wallet_menu():
+    await message.answer(
+f"""
+👤 Профиль
+
+🆔 ID:
+{user[0]}
+
+💰 Баланс:
+{user[1]}₽
+
+💳 Реквизиты:
+{user[2] or "Нет"}
+{user[3] or ""}
+""",
+reply_markup=profile_kb()
+)
+
+
+
+def profile_kb():
 
     kb=ReplyKeyboardBuilder()
 
     kb.add(
-        KeyboardButton(text="➕ Добавить кошелек"),
-        KeyboardButton(text="⬅️ Назад")
+        KeyboardButton(text="➕ Добавить реквизиты"),
+        KeyboardButton(text="💸 Вывести")
     )
 
     return kb.as_markup(resize_keyboard=True)
 
 
 
-@dp.message(lambda m:m.text=="➕ Добавить кошелек")
+@dp.message(lambda m:m.text=="➕ Добавить реквизиты")
 async def wallet(message:Message):
 
-    wallet_wait[message.from_user.id]="type"
-
-    kb=ReplyKeyboardBuilder()
-
-    kb.add(
-        KeyboardButton(text="🟦 TON"),
-        KeyboardButton(text="💳 Карта")
-    )
+    state[message.from_user.id]="wallet_type"
 
     await message.answer(
-        "Выберите тип:",
-        reply_markup=kb.as_markup(resize_keyboard=True)
+        "Выберите тип:\n\n🟦 TON\n💳 Карта"
     )
 
 
@@ -123,10 +121,44 @@ async def wallet(message:Message):
 @dp.message(lambda m:m.text in ["🟦 TON","💳 Карта"])
 async def wallet_type(message:Message):
 
-    wallet_wait[message.from_user.id]=message.text
+    state[message.from_user.id]=message.text
 
     await message.answer(
         "Введите реквизит:"
+    )
+
+
+
+@dp.message(lambda m:m.from_user.id in state)
+async def save_wallet(message:Message):
+
+    uid=message.from_user.id
+
+    typ=state[uid]
+
+    if typ=="🟦 TON":
+        set_wallet(uid,"TON",message.text)
+
+    else:
+        set_wallet(uid,"CARD",message.text)
+
+
+    del state[uid]
+
+
+    await message.answer(
+        "✅ Реквизиты сохранены"
+    )
+
+
+
+@dp.message(lambda m:m.text=="💸 Вывести")
+async def withdraw(message:Message):
+
+    state[message.from_user.id]="withdraw"
+
+    await message.answer(
+        "Введите сумму выплаты:"
     )
 
 
@@ -137,87 +169,113 @@ async def text(message:Message):
     uid=message.from_user.id
 
 
-    if uid in wallet_wait:
+    if state.get(uid)=="withdraw":
 
-        typ=wallet_wait[uid]
+        amount=int(message.text)
 
-        if typ=="🟦 TON":
-            set_wallet(uid,"TON",message.text)
+        user=get_user(uid)
+
+
+        if user[1] < amount:
+
+            await message.answer(
+                "❌ Недостаточно средств"
+            )
 
         else:
-            set_wallet(uid,"CARD",message.text)
+
+            create_withdraw(uid,amount)
+
+            await message.answer(
+                "✅ Заявка отправлена"
+            )
 
 
-        del wallet_wait[uid]
-
-        await message.answer(
-            "✅ Реквизит сохранен",
-            reply_markup=menu()
-        )
+        del state[uid]
 
         return
 
 
 
-    if message.text=="🤖 Актуальные боты":
-
-        await message.answer(
-            "🤖 Пока список пуст"
-        )
-
-
-    elif message.text=="📰 Новости":
-
-        await message.answer(
-            "📰 Новостей пока нет"
-        )
-
-
-    elif message.text=="🏆 Топ":
-
-        await message.answer(
-            "🏆 Топ пользователей пуст"
-        )
-
-
-
-    elif message.text=="⚙️ Админ":
+    if message.text=="⚙️ Админ":
 
         user=get_user(uid)
 
         if user[4]==1:
 
             await message.answer(
-                """
+"""
 ⚙️ Админ панель
+
+/balance ID сумма
 
 /addadmin ID
 
-Пользователи
-Реквизиты
+/withdraws
 """
-            )
+)
+
+
+
+@dp.message(Command("balance"))
+async def balance(message:Message):
+
+    if get_user(message.from_user.id)[4]!=1:
+        return
+
+    args=message.text.split()
+
+    add_balance(
+        int(args[1]),
+        int(args[2])
+    )
+
+
+    await message.answer(
+        "✅ Баланс добавлен"
+    )
 
 
 
 @dp.message(Command("addadmin"))
 async def addadmin(message:Message):
 
-    user=get_user(message.from_user.id)
-
-    if user[4]!=1:
+    if get_user(message.from_user.id)[4]!=1:
         return
-
 
     args=message.text.split()
 
-    if len(args)>1:
+    make_admin(
+        int(args[1])
+    )
 
-        make_admin(int(args[1]))
+    await message.answer(
+        "✅ Админ добавлен"
+    )
 
-        await message.answer(
-            "✅ Админ добавлен"
-        )
+
+
+@dp.message(Command("withdraws"))
+async def withdraws(message:Message):
+
+    if get_user(message.from_user.id)[4]!=1:
+        return
+
+
+    data=get_withdrawals()
+
+    text="💸 Заявки:\n"
+
+    for w in data:
+        text+=f"""
+#{w[0]}
+ID: {w[1]}
+Сумма: {w[2]}₽
+Статус: {w[3]}
+
+"""
+
+    await message.answer(text)
 
 
 
