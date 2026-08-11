@@ -6,7 +6,7 @@ from database import (
     get_withdrawals,
     update_withdraw,
     make_admin,
-    get_users
+    get_user
 )
 
 router = Router()
@@ -107,7 +107,7 @@ async def users(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    users = get_users()
+    users = get_user()
 
     text = "👥 Пользователи:\n\n"
 
