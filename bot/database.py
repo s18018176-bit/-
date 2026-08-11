@@ -1,150 +1,258 @@
 import sqlite3
 
 
-db = sqlite3.connect("bot.db")
-cursor = db.cursor()
+DB = "database.db"
 
 
+def connect():
+    return sqlite3.connect(DB)
+
+
+# Создание таблиц
 def init_db():
+    db = connect()
+    cur = db.cursor()
 
-    cursor.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
-        balance INTEGER DEFAULT 0,
-        wallet_type TEXT,
-        wallet TEXT,
-        is_admin INTEGER DEFAULT 0
+        balance INTEGER DEFAULT 0
     )
     """)
 
-    cursor.execute("""
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS admins(
+        id INTEGER PRIMARY KEY
+    )
+    """)
+
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS withdrawals(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         amount INTEGER,
-        status TEXT DEFAULT 'pending'
+        status TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS news(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS bots(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS top(
+        id INTEGER PRIMARY KEY,
+        text TEXT
     )
     """)
 
     db.commit()
+    db.close()
 
 
 
-def add_user(uid):
+# ---------- ПОЛЬЗОВАТЕЛИ ----------
 
-    cursor.execute(
-        "INSERT OR IGNORE INTO users(id) VALUES(?)",
-        (uid,)
-    )
+def get_user(user_id):
+    db = connect()
+    cur = db.cursor()
 
-    db.commit()
-
-
-
-def get_user(uid):
-
-    cursor.execute(
+    cur.execute(
         "SELECT * FROM users WHERE id=?",
-        (uid,)
+        (user_id,)
     )
 
-    return cursor.fetchone()
+    result = cur.fetchone()
+
+    db.close()
+    return result
 
 
 
-def add_balance(uid, amount):
+def add_user(user_id):
 
-    cursor.execute(
-        """
-        UPDATE users
-        SET balance = balance + ?
-        WHERE id=?
-        """,
-        (amount, uid)
-    )
+    db = connect()
+    cur = db.cursor()
 
-    db.commit()
-
-
-
-def set_wallet(uid, wtype, wallet):
-
-    cursor.execute(
-        """
-        UPDATE users
-        SET wallet_type=?, wallet=?
-        WHERE id=?
-        """,
-        (wtype, wallet, uid)
+    cur.execute(
+        "INSERT OR IGNORE INTO users(id) VALUES(?)",
+        (user_id,)
     )
 
     db.commit()
+    db.close()
 
 
 
-def make_admin(uid):
+# ---------- АДМИНЫ ----------
 
-    add_user(uid)
+def add_admin(user_id):
 
-    cursor.execute(
-        """
-        UPDATE users
-        SET is_admin=1
-        WHERE id=?
-        """,
-        (uid,)
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "INSERT OR IGNORE INTO admins(id) VALUES(?)",
+        (user_id,)
     )
 
     db.commit()
+    db.close()
 
 
 
-def create_withdraw(uid, amount):
-
-    cursor.execute(
-        """
-        INSERT INTO withdrawals(user_id,amount)
-        VALUES(?,?)
-        """,
-        (uid, amount)
-    )
-
-    db.commit()
-
-
+# ---------- ВЫПЛАТЫ ----------
 
 def get_withdrawals():
 
-    cursor.execute(
-        """
-        SELECT * FROM withdrawals
-        WHERE status='pending'
-        """
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "SELECT * FROM withdrawals"
     )
 
-    return cursor.fetchall()
+    data = cur.fetchall()
+
+    db.close()
+
+    return data
 
 
 
-def update_withdraw(wid,status):
+def update_withdraw(id, status):
 
-    cursor.execute(
-        """
-        UPDATE withdrawals
-        SET status=?
-        WHERE id=?
-        """,
-        (status,wid)
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "UPDATE withdrawals SET status=? WHERE id=?",
+        (status,id)
     )
 
     db.commit()
+    db.close()
 
 
 
-def users():
+# ---------- НОВОСТИ ----------
 
-    cursor.execute(
-        "SELECT * FROM users"
+def add_news(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "INSERT INTO news(text) VALUES(?)",
+        (text,)
     )
 
-    return cursor.fetchall()
+    db.commit()
+    db.close()
+
+
+
+def get_news():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "SELECT text FROM news ORDER BY id DESC"
+    )
+
+    data = cur.fetchall()
+
+    db.close()
+
+    return [x[0] for x in data]
+
+
+
+# ---------- БОТЫ ----------
+
+def add_bot(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "INSERT INTO bots(text) VALUES(?)",
+        (text,)
+    )
+
+    db.commit()
+    db.close()
+
+
+
+def get_bots():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "SELECT text FROM bots ORDER BY id DESC"
+    )
+
+    data = cur.fetchall()
+
+    db.close()
+
+    return [x[0] for x in data]
+
+
+
+# ---------- ТОП ----------
+
+def set_top(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "DELETE FROM top"
+    )
+
+    cur.execute(
+        "INSERT INTO top(id,text) VALUES(1,?)",
+        (text,)
+    )
+
+    db.commit()
+    db.close()
+
+
+
+def get_top():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        "SELECT text FROM top WHERE id=1"
+    )
+
+    data = cur.fetchone()
+
+    db.close()
+
+    if data:
+        return data[0]
+
+    return "Топ пока пуст"
+
+
+
+# Запуск создания базы
+init_db()
