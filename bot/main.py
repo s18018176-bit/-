@@ -65,7 +65,7 @@ async def start(message:Message):
     await message.answer(
         "👋 Добро пожаловать!",
         reply_markup=keyboard(
-            user[4]==1
+            len(user) > 4 and user[4] == 1
         )
     )
 
