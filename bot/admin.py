@@ -8,10 +8,6 @@ from database import (
     add_admin,
     add_news,
     get_news,
-    add_bot,
-    get_bots,
-    set_top,
-    get_top
 )
 
 router = Router()
