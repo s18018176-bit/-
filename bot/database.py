@@ -15,7 +15,9 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
         balance INTEGER DEFAULT 0,
-        is_admin INTEGER DEFAULT 0
+        wallet TEXT DEFAULT '',
+        wallet_type TEXT DEFAULT '',
+        admin INTEGER DEFAULT 0
     )
     """)
 
@@ -28,194 +30,128 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS news(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        text TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS bots(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        text TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS top(
-        id INTEGER PRIMARY KEY,
-        text TEXT
-    )
-    """)
-
     db.commit()
     db.close()
 
 
-# USERS
 
-def add_user(user_id):
-    db = connect()
-    cur = db.cursor()
+def add_user(uid):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
         "INSERT OR IGNORE INTO users(id) VALUES(?)",
-        (user_id,)
+        (uid,)
     )
 
     db.commit()
     db.close()
 
 
-def get_user(user_id):
-    db = connect()
-    cur = db.cursor()
+
+def get_user(uid):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
         "SELECT * FROM users WHERE id=?",
-        (user_id,)
+        (uid,)
     )
 
-    user = cur.fetchone()
+    user=cur.fetchone()
 
     db.close()
+
     return user
 
 
-# ADMINS
 
-def add_admin(user_id):
-    db = connect()
-    cur = db.cursor()
+def make_admin(uid):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
-        "UPDATE users SET is_admin=1 WHERE id=?",
-        (user_id,)
+        "UPDATE users SET admin=1 WHERE id=?",
+        (uid,)
     )
 
     db.commit()
     db.close()
 
 
-# NEWS
 
-def add_news(text):
-    db = connect()
-    cur = db.cursor()
+def add_admin(uid):
+    make_admin(uid)
+
+
+
+def add_balance(uid, amount):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
-        "INSERT INTO news(text) VALUES(?)",
-        (text,)
+        "UPDATE users SET balance=balance+? WHERE id=?",
+        (amount,uid)
     )
 
     db.commit()
     db.close()
 
 
-def get_news():
-    db = connect()
-    cur = db.cursor()
+
+def set_wallet(uid, typ, wallet):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
-        "SELECT text FROM news ORDER BY id DESC"
-    )
-
-    data = cur.fetchall()
-
-    db.close()
-
-    return [x[0] for x in data]
-
-
-# BOTS
-
-def add_bot(text):
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "INSERT INTO bots(text) VALUES(?)",
-        (text,)
+        """
+        UPDATE users
+        SET wallet=?, wallet_type=?
+        WHERE id=?
+        """,
+        (wallet,typ,uid)
     )
 
     db.commit()
     db.close()
 
 
-def get_bots():
-    db = connect()
-    cur = db.cursor()
+
+def create_withdraw(uid,amount):
+
+    db=connect()
+    cur=db.cursor()
 
     cur.execute(
-        "SELECT text FROM bots ORDER BY id DESC"
-    )
-
-    data = cur.fetchall()
-
-    db.close()
-
-    return [x[0] for x in data]
-
-
-# TOP
-
-def set_top(text):
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute("DELETE FROM top")
-
-    cur.execute(
-        "INSERT INTO top(id,text) VALUES(1,?)",
-        (text,)
+        """
+        INSERT INTO withdrawals
+        (user_id,amount,status)
+        VALUES(?,?,?)
+        """,
+        (uid,amount,"pending")
     )
 
     db.commit()
     db.close()
 
 
-def get_top():
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "SELECT text FROM top WHERE id=1"
-    )
-
-    data = cur.fetchone()
-
-    db.close()
-
-    return data[0] if data else "Топ пока пуст"
-
-
-# WITHDRAW
 
 def get_withdrawals():
-    db = connect()
-    cur = db.cursor()
 
-    cur.execute("SELECT * FROM withdrawals")
+    db=connect()
+    cur=db.cursor()
 
-    data = cur.fetchall()
+    cur.execute(
+        "SELECT * FROM withdrawals"
+    )
+
+    data=cur.fetchall()
 
     db.close()
 
     return data
-
-
-def update_withdraw(id, status):
-    db = connect()
-    cur = db.cursor()
-
-    cur.execute(
-        "UPDATE withdrawals SET status=? WHERE id=?",
-        (status, id)
-    )
-
-    db.commit()
-    db.close()
-
-
-init_db()
