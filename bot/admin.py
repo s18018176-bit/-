@@ -16,15 +16,17 @@ from database import (
 
 router = Router()
 
-# ID главного админа
 MAIN_ADMIN = 8965415545
 
 
-def is_admin(user_id):
+def is_admin(user_id: int):
     return user_id == MAIN_ADMIN
 
 
-# Админ меню
+# =========================
+# АДМИН ПАНЕЛЬ
+# =========================
+
 @router.message(Command("admin"))
 async def admin_panel(message: Message):
     if not is_admin(message.from_user.id):
@@ -38,7 +40,7 @@ async def admin_panel(message: Message):
         "/addnews текст\n"
         "/news\n\n"
         "🤖 Боты:\n"
-        "/addbot название описание\n"
+        "/addbot текст\n"
         "/bots\n\n"
         "🏆 Топ:\n"
         "/settop текст\n"
@@ -46,7 +48,10 @@ async def admin_panel(message: Message):
     )
 
 
-# Добавить админа
+# =========================
+# АДМИНЫ
+# =========================
+
 @router.message(Command("addadmin"))
 async def add_admin_cmd(message: Message):
     if not is_admin(message.from_user.id):
@@ -58,12 +63,21 @@ async def add_admin_cmd(message: Message):
         await message.answer("Пример:\n/addadmin 123456789")
         return
 
-    add_admin(int(args[1]))
+    try:
+        user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ ID должен быть числом")
+        return
+
+    add_admin(user_id)
 
     await message.answer("✅ Админ добавлен")
 
 
-# Просмотр выплат
+# =========================
+# ВЫПЛАТЫ
+# =========================
+
 @router.message(Command("withdraws"))
 async def withdraws(message: Message):
     if not is_admin(message.from_user.id):
@@ -86,52 +100,72 @@ async def withdraws(message: Message):
         )
 
     text += (
-        "Одобрить:\n"
-        "/ok ID\n\n"
-        "Отклонить:\n"
-        "/no ID"
+        "/ok ID — одобрить\n"
+        "/no ID — отклонить"
     )
 
     await message.answer(text)
 
 
-# Одобрить выплату
 @router.message(Command("ok"))
 async def approve(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    id = message.text.split()[1]
+    args = message.text.split()
 
-    update_withdraw(id, "approved")
+    if len(args) < 2:
+        await message.answer("Пример:\n/ok 1")
+        return
+
+    try:
+        withdraw_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ ID должен быть числом")
+        return
+
+    update_withdraw(withdraw_id, "approved")
 
     await message.answer("✅ Выплата одобрена")
 
 
-# Отклонить выплату
 @router.message(Command("no"))
 async def reject(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    id = message.text.split()[1]
+    args = message.text.split()
 
-    update_withdraw(id, "rejected")
+    if len(args) < 2:
+        await message.answer("Пример:\n/no 1")
+        return
+
+    try:
+        withdraw_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ ID должен быть числом")
+        return
+
+    update_withdraw(withdraw_id, "rejected")
 
     await message.answer("❌ Выплата отклонена")
 
 
-# Новости
+# =========================
+# НОВОСТИ
+# =========================
+
 @router.message(Command("addnews"))
 async def add_news_cmd(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    text = message.text.replace("/addnews", "").strip()
+    text = message.text.removeprefix("/addnews").strip()
 
     if not text:
         await message.answer(
-            "Пример:\n/addnews Обновление бота сегодня"
+            "Пример:\n"
+            "/addnews Обновление бота сегодня"
         )
         return
 
@@ -142,11 +176,10 @@ async def add_news_cmd(message: Message):
 
 @router.message(Command("news"))
 async def news(message: Message):
-
     data = get_news()
 
     if not data:
-        await message.answer("Новостей нет")
+        await message.answer("📰 Новостей пока нет")
         return
 
     text = "📰 Новости:\n\n"
@@ -157,17 +190,21 @@ async def news(message: Message):
     await message.answer(text)
 
 
-# Боты
+# =========================
+# БОТЫ
+# =========================
+
 @router.message(Command("addbot"))
 async def add_bot_cmd(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    text = message.text.replace("/addbot", "").strip()
+    text = message.text.removeprefix("/addbot").strip()
 
     if not text:
         await message.answer(
-            "Пример:\n/addbot @botname описание"
+            "Пример:\n"
+            "/addbot @BotName — описание бота"
         )
         return
 
@@ -178,11 +215,10 @@ async def add_bot_cmd(message: Message):
 
 @router.message(Command("bots"))
 async def bots(message: Message):
-
     data = get_bots()
 
     if not data:
-        await message.answer("Ботов нет")
+        await message.answer("🤖 Актуальных ботов пока нет")
         return
 
     text = "🤖 Актуальные боты:\n\n"
@@ -193,17 +229,38 @@ async def bots(message: Message):
     await message.answer(text)
 
 
-# Топ
+# КНОПКА "🤖 Актуальные боты"
+@router.message(lambda message: message.text == "🤖 Актуальные боты")
+async def bots_button(message: Message):
+    data = get_bots()
+
+    if not data:
+        await message.answer("🤖 Актуальных ботов пока нет")
+        return
+
+    text = "🤖 Актуальные боты:\n\n"
+
+    for b in data:
+        text += f"• {b}\n"
+
+    await message.answer(text)
+
+
+# =========================
+# ТОП
+# =========================
+
 @router.message(Command("settop"))
 async def set_top_cmd(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    text = message.text.replace("/settop", "").strip()
+    text = message.text.removeprefix("/settop").strip()
 
     if not text:
         await message.answer(
-            "Пример:\n/settop 🥇 BotName - 1000 пользователей"
+            "Пример:\n"
+            "/settop 🥇 BotName — 1000 пользователей"
         )
         return
 
@@ -214,9 +271,27 @@ async def set_top_cmd(message: Message):
 
 @router.message(Command("top"))
 async def top(message: Message):
-
     data = get_top()
 
     await message.answer(
         "🏆 Топ:\n\n" + str(data)
     )
+
+
+# КНОПКА "🏆 Топ"
+@router.message(lambda message: message.text == "🏆 Топ")
+async def top_button(message: Message):
+    data = get_top()
+
+    await message.answer(
+        "🏆 Топ:\n\n" + str(data)
+    )
+
+
+# КНОПКА "⚙️ Админ"
+@router.message(lambda message: message.text == "⚙️ Админ")
+async def admin_button(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    await admin_panel(message)
