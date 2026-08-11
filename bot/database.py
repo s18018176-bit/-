@@ -212,3 +212,94 @@ def get_news():
     db.close()
 
     return dataй
+
+def add_bot(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS bots(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT
+    )
+    """)
+
+    cur.execute(
+        "INSERT INTO bots(text) VALUES(?)",
+        (text,)
+    )
+
+    db.commit()
+    db.close()
+
+
+def get_bots():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS bots(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT
+    )
+    """)
+
+    cur.execute(
+        "SELECT * FROM bots ORDER BY id DESC"
+    )
+
+    data = cur.fetchall()
+
+    db.close()
+
+    return data
+
+
+def set_top(text):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS top(
+        id INTEGER PRIMARY KEY,
+        text TEXT
+    )
+    """)
+
+    cur.execute(
+        "DELETE FROM top"
+    )
+
+    cur.execute(
+        "INSERT INTO top(id,text) VALUES(1,?)",
+        (text,)
+    )
+
+    db.commit()
+    db.close()
+
+
+def get_top():
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS top(
+        id INTEGER PRIMARY KEY,
+        text TEXT
+    )
+    """)
+
+    cur.execute(
+        "SELECT text FROM top WHERE id=1"
+    )
+
+    data = cur.fetchone()
+
+    db.close()
+
+    return data
