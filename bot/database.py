@@ -155,3 +155,20 @@ def get_withdrawals():
     db.close()
 
     return data
+
+def update_withdraw(id, status):
+
+    db = connect()
+    cur = db.cursor()
+
+    cur.execute(
+        """
+        UPDATE withdrawals
+        SET status=?
+        WHERE id=?
+        """,
+        (status, id)
+    )
+
+    db.commit()
+    db.close()
