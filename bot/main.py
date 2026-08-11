@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.filters import Command
 
 
-TOKEN = "ТВОЙ_ТОКЕН_СЮДА"
+TOKEN = "8833750528:AAF7W6C6DO0QwvuHqMWKAVtgk8uWJO0TDdk"
 
 ADMIN_ID = 8965415545
 
