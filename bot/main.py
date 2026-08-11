@@ -57,7 +57,7 @@ async def start(message:Message):
     add_user(uid)
 
     if uid==ADMIN_ID:
-        make_admin(uid)
+        add_admin(uid)
 
     user=get_user(uid)
 
