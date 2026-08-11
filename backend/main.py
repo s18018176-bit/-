@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from database import connect
+from backend.database import connect
 
 app = FastAPI(
     title="Worker Panel API"
